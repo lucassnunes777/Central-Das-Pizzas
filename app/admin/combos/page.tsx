@@ -1,0 +1,380 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProtectedRoute } from '@/components/protected-route'
+import { ImageUpload } from '@/components/image-upload'
+import { UserRole } from '@/lib/constants'
+import { Plus, Edit, Trash2, ArrowLeft } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+interface Combo {
+  id: string
+  name: string
+  description: string
+  price: number
+  image?: string
+  isActive: boolean
+  category: {
+    id: string
+    name: string
+  }
+}
+
+interface Category {
+  id: string
+  name: string
+  description?: string
+}
+
+export default function AdminCombos() {
+  const [combos, setCombos] = useState<Combo[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null)
+  const router = useRouter()
+
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    categoryId: '',
+    image: '',
+    isActive: true
+  })
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+
+  useEffect(() => {
+    fetchCombos()
+    fetchCategories()
+  }, [])
+
+  const fetchCombos = async () => {
+    try {
+      const response = await fetch('/api/combos')
+      const data = await response.json()
+      setCombos(data)
+    } catch (error) {
+      toast.error('Erro ao carregar combos')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      setCategories(data)
+    } catch (error) {
+      toast.error('Erro ao carregar categorias')
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const url = editingCombo ? `/api/combos/${editingCombo.id}` : '/api/combos'
+      const method = editingCombo ? 'PUT' : 'POST'
+
+      // Se há uma imagem selecionada, converter para base64
+      let imageData = formData.image
+      if (selectedImage) {
+        imageData = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(selectedImage)
+        })
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          price: parseFloat(formData.price),
+          image: imageData
+        }),
+      })
+
+      if (response.ok) {
+        toast.success(editingCombo ? 'Combo atualizado!' : 'Combo criado!')
+        setShowForm(false)
+        setEditingCombo(null)
+        resetForm()
+        fetchCombos()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Erro ao salvar combo')
+      }
+    } catch (error) {
+      toast.error('Erro ao salvar combo')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleEdit = (combo: Combo) => {
+    setEditingCombo(combo)
+    setFormData({
+      name: combo.name,
+      description: combo.description,
+      price: combo.price.toString(),
+      categoryId: combo.category.id,
+      image: combo.image || '',
+      isActive: combo.isActive
+    })
+    setShowForm(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este combo?')) return
+
+    try {
+      const response = await fetch(`/api/combos/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Combo excluído!')
+        fetchCombos()
+      } else {
+        toast.error('Erro ao excluir combo')
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir combo')
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '',
+      categoryId: '',
+      image: '',
+      isActive: true
+    })
+    setSelectedImage(null)
+  }
+
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingCombo(null)
+    resetForm()
+  }
+
+  return (
+    <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER]}>
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-6">
+              <div className="flex items-center">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/dashboard')}
+                  className="mr-4"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Gestão de Combos
+                </h1>
+              </div>
+              
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Combo
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            {showForm ? (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>
+                    {editingCombo ? 'Editar Combo' : 'Novo Combo'}
+                  </CardTitle>
+                  <CardDescription>
+                    {editingCombo ? 'Atualize as informações do combo' : 'Adicione um novo combo ao cardápio'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Nome do Combo</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                          placeholder="Ex: Pizza Margherita + Refrigerante"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="price">Preço (R$)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={formData.price}
+                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                          required
+                          placeholder="29.90"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description">Descrição</Label>
+                      <textarea
+                        id="description"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        rows={3}
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        required
+                        placeholder="Descreva os itens incluídos no combo..."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="categoryId">Categoria</Label>
+                        <select
+                          id="categoryId"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          value={formData.categoryId}
+                          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                          required
+                        >
+                          <option value="">Selecione uma categoria</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="md:col-span-2">
+                        <Label>Imagem do Combo</Label>
+                        <ImageUpload
+                          onImageSelect={setSelectedImage}
+                          currentImage={formData.image}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={formData.isActive}
+                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="isActive">Combo ativo</Label>
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={handleCancel}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? 'Salvando...' : editingCombo ? 'Atualizar' : 'Criar'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {combos.map((combo) => (
+                <Card key={combo.id} className="overflow-hidden">
+                  {combo.image && (
+                    <div className="aspect-video bg-gray-200">
+                      <img
+                        src={combo.image}
+                        alt={combo.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{combo.name}</CardTitle>
+                        <CardDescription>{combo.category.name}</CardDescription>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(combo)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(combo.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-2">{combo.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-primary">
+                        R$ {combo.price.toFixed(2)}
+                      </span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        combo.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {combo.isActive ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {combos.length === 0 && !isLoading && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Nenhum combo cadastrado ainda.</p>
+                <Button onClick={() => setShowForm(true)} className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeiro Combo
+                </Button>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </ProtectedRoute>
+  )
+}
+
