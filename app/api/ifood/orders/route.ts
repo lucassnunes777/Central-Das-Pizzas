@@ -20,7 +20,7 @@ export async function GET() {
 
     // Verificar se o usuário tem permissão para acessar integrações
     const allowedRoles = ['ADMIN', 'MANAGER']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!allowedRoles.includes(session.user.role as any)) {
       return NextResponse.json(
         { message: 'Sem permissão' },
         { status: 403 }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para acessar integrações
     const allowedRoles = ['ADMIN', 'MANAGER']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!allowedRoles.includes(session.user.role as any)) {
       return NextResponse.json(
         { message: 'Sem permissão' },
         { status: 403 }

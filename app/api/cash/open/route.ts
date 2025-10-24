@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para abrir o caixa
     const allowedRoles = ['ADMIN', 'MANAGER', 'CASHIER']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!allowedRoles.includes(session.user.role as any)) {
       return NextResponse.json(
         { message: 'Sem permissão' },
         { status: 403 }
