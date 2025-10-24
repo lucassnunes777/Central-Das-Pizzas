@@ -41,10 +41,6 @@ export default function AdminReports() {
   })
   const router = useRouter()
 
-  useEffect(() => {
-    fetchReportData()
-  }, [dateRange, fetchReportData])
-
   const fetchReportData = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -57,6 +53,10 @@ export default function AdminReports() {
       setIsLoading(false)
     }
   }, [dateRange.start, dateRange.end])
+
+  useEffect(() => {
+    fetchReportData()
+  }, [fetchReportData])
 
   const exportReport = async (format: 'csv' | 'pdf') => {
     try {
