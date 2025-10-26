@@ -1,137 +1,91 @@
-# 🚀 Guia Rápido de Deploy
+# 🚀 Guia de Deploy Automático
 
-## Railway (Recomendado - Mais Fácil)
+Este projeto está configurado para deploy automático no Railway. Siga as instruções abaixo para fazer alterações e atualizar automaticamente.
 
-### Passo a Passo
+## 📋 Pré-requisitos
 
-1. **Acesse** [railway.app](https://railway.app) e faça login
+- Git configurado
+- Node.js instalado
+- Acesso ao repositório GitHub
+- Projeto conectado ao Railway
 
-2. **Crie um novo projeto**
-   - Clique em "New Project"
-   - Selecione "Deploy from GitHub repo"
-   - Conecte seu repositório
+## 🔄 Deploy Automático
 
-3. **Adicione PostgreSQL**
-   - No projeto, clique em "New" → "Database" → "Add PostgreSQL"
-   - Railway criará automaticamente a variável `DATABASE_URL`
+### Opção 1: Script PowerShell (Recomendado para Windows)
 
-4. **Configure variáveis de ambiente**
-   - Vá em "Variables"
-   - Adicione as seguintes variáveis:
-   ```env
-   NEXTAUTH_URL=https://seu-app.up.railway.app
-   NEXTAUTH_SECRET=<gere-um-secret-com-openssl-rand-base64-32>
-   ```
-
-5. **Espere o deploy**
-   - Railway fará o build automaticamente
-   - O script `railway-setup.js` criará as tabelas
-
-6. **Acesse o app**
-   - Railway fornecerá uma URL (ex: https://seu-app.up.railway.app)
-   - Acesse `/auth/signup` para criar sua conta
-   - Para tornar-se admin, acesse `/make-admin` (adicione o email)
-
-## Variáveis de Ambiente
-
-### Obrigatórias
-```env
-DATABASE_URL=postgresql://... # Criado automaticamente pelo Railway
-NEXTAUTH_URL=https://seu-app.up.railway.app
-NEXTAUTH_SECRET=seu-secret-aleatorio
-```
-
-### Opcionais
-```env
-# Configurações da loja
-RESTAURANT_NAME="Central Das Pizzas Avenida Sul"
-RESTAURANT_PHONE="(11) 99999-9999"
-RESTAURANT_ADDRESS="Avenida Sul, Centro"
-DELIVERY_FEE="5.00"
-MIN_ORDER_VALUE="25.00"
-
-# iFood (opcional)
-IFOOD_API_KEY=""
-IFOOD_API_SECRET=""
-
-# Cloudinary para imagens (recomendado)
-CLOUDINARY_CLOUD_NAME=""
-CLOUDINARY_API_KEY=""
-CLOUDINARY_API_SECRET=""
-```
-
-## Depois do Deploy
-
-### 1. Criar conta de administrador
-1. Acesse `https://seu-app.up.railway.app/auth/signup`
-2. Crie sua conta
-3. Acesse `https://seu-app.up.railway.app/make-admin`
-4. Informe seu email para tornar-se admin
-
-### 2. Configurar a loja
-1. Faça login como admin
-2. Acesse `/admin/settings`
-3. Configure:
-   - Nome da loja
-   - Logo
-   - Banner
-   - Telefone
-   - Endereço
-   - Horários
-
-### 3. Adicionar produtos
-1. Acesse `/admin/combos`
-2. Crie categorias
-3. Adicione produtos
-
-### 4. Testar o cardápio público
-1. Acesse `/client/menu` (sem login)
-2. Verifique se tudo está funcionando
-3. Teste no celular
-
-## Solução de Problemas
-
-### Build falha
-- Verifique os logs no Railway
-- Confirme que `DATABASE_URL` está configurada
-
-### Logo não aparece
-- Faça upload novamente em `/admin/settings`
-- Limpe o cache do navegador
-
-### Erro ao criar pedidos
-- Verifique se há produtos no banco
-- Confirme que as categorias estão ativas
-
-### Imagens não carregam
-- Imagens base64 podem ser grandes
-- Considere usar Cloudinary em produção
-
-## Gerar NEXTAUTH_SECRET
-
-### No Linux/Mac:
-```bash
-openssl rand -base64 32
-```
-
-### No Windows (PowerShell):
 ```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
+# Execute no terminal PowerShell
+.\deploy.ps1
 ```
 
-## Limites do Railway Free Tier
+### Opção 2: Script NPM
 
-- **$5 crédito por mês**
-- **512 MB RAM**
-- **1 GB storage**
-- Recomendado para testes e produção pequena
+```bash
+# Para Windows
+npm run deploy:win
 
-## Backup
+# Para outros sistemas
+npm run deploy
+```
 
-O Railway faz backup automático do PostgreSQL, mas é recomendado:
-1. Exportar dados regularmente
-2. Fazer backup manual do banco
+### Opção 3: Manual
 
----
+```bash
+# 1. Adicionar arquivos
+git add .
 
-**Pronto! Seu sistema está no ar 🎉**
+# 2. Fazer commit
+git commit -m "feat: Sua descrição da alteração"
+
+# 3. Push para o repositório
+git push origin main
+```
+
+## 🏗️ Processo de Deploy no Railway
+
+1. **Push para GitHub**: As alterações são enviadas para o repositório
+2. **Deploy Automático**: O Railway detecta as mudanças e inicia o deploy
+3. **Build**: Instala dependências e gera o cliente Prisma
+4. **Database**: Aplica migrações e popula dados
+5. **Start**: Inicia a aplicação
+
+## 📁 Arquivos de Configuração
+
+- `deploy.ps1` - Script PowerShell para Windows
+- `scripts/auto-deploy.js` - Script Node.js multiplataforma
+- `railway-deploy.sh` - Script de build para Railway
+- `package.json` - Scripts NPM configurados
+
+## ⚠️ Importante
+
+- Sempre teste localmente antes do deploy
+- O Railway fará deploy automático a cada push para `main`
+- O banco de dados será atualizado automaticamente
+- Dados de pizza serão populados automaticamente
+
+## 🐛 Troubleshooting
+
+### Erro de Permissão (PowerShell)
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Erro de Git
+```bash
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+```
+
+### Erro de Dependências
+```bash
+npm install
+npm run db:generate
+```
+
+## 📞 Suporte
+
+Em caso de problemas, verifique:
+1. Status do Railway no dashboard
+2. Logs de deploy no Railway
+3. Status do repositório GitHub
+4. Configuração das variáveis de ambiente
