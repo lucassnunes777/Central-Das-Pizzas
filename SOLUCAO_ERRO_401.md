@@ -11,12 +11,12 @@ Erro 401 (Unauthorized) ao tentar fazer login.
 
 Acesse no navegador:
 ```
-https://www.centraldaspizzas.com/api/setup/create-users
+https://centraldaspizzass.up.railway.app/api/setup/create-users
 ```
 
-Ou use o domínio do Railway:
+Ou se o domínio customizado estiver configurado:
 ```
-https://seu-projeto.up.railway.app/api/setup/create-users
+https://www.centraldaspizzas.com/api/setup/create-users
 ```
 
 Você deve ver uma resposta JSON com os usuários criados.
@@ -29,7 +29,7 @@ Certifique-se de que estas variáveis estão configuradas:
 2. Vá em **Variables** do serviço "web"
 3. Verifique se existe:
    - `NEXTAUTH_SECRET` (obrigatório!)
-   - `NEXTAUTH_URL` = `https://www.centraldaspizzas.com`
+   - `NEXTAUTH_URL` = `https://centraldaspizzass.up.railway.app` (ou `https://www.centraldaspizzas.com` se domínio customizado)
    - `DATABASE_URL` = `postgresql://postgres:...@postgres.railway.internal:5432/railway`
 
 ### 3️⃣ **Gerar NEXTAUTH_SECRET (se não tiver)**
