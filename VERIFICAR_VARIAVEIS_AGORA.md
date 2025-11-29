@@ -1,87 +1,128 @@
-# 🔍 Verificar Variáveis Agora - Solução Rápida
+# ✅ Verificação de Variáveis de Ambiente - PASSO A PASSO
 
-## ⚠️ O endpoint de teste ainda não está disponível (404)
+## 🔍 O QUE VERIFICAR
 
-Mas podemos verificar as variáveis de outra forma!
-
----
-
-## ✅ SOLUÇÃO: Usar o Endpoint de Criar Usuários
-
-O endpoint `/api/setup/create-users` agora também mostra as variáveis de ambiente!
-
-### **PASSO 1: Acessar o Endpoint**
-
-Abra no navegador:
-```
-https://centraldaspizzass.up.railway.app/api/setup/create-users
-```
-
-### **PASSO 2: Verificar a Resposta**
-
-Agora a resposta inclui uma seção `environmentCheck`:
-
-```json
-{
-  "success": true,
-  "created": [...],
-  "environmentCheck": {
-    "hasNextAuthSecret": true/false,
-    "hasNextAuthUrl": true/false,
-    "hasDatabaseUrl": true/false,
-    "nextAuthUrl": "https://centraldaspizzass.up.railway.app" ou "Não configurado",
-    "databaseUrlPreview": "✅ URL pública" ou "❌ URL INTERNA (errado!)"
-  },
-  "loginInstructions": {
-    "required": [
-      "NEXTAUTH_SECRET: ✅ Configurado ou ❌ FALTANDO",
-      "NEXTAUTH_URL: ✅ ... ou ❌ FALTANDO",
-      "DATABASE_URL: ✅ URL pública ou ❌ FALTANDO"
-    ]
-  }
-}
-```
+Baseado na sua tela do Railway, você está vendo as variáveis do **PostgreSQL**. Agora precisamos verificar o **serviço web** (aplicação).
 
 ---
 
-## 🔧 O Que Fazer Baseado no Resultado
+## 📋 CHECKLIST DE VERIFICAÇÃO
 
-### Se `NEXTAUTH_SECRET: ❌ FALTANDO`
+### **1️⃣ Verificar DATABASE_URL no Serviço Web**
 
-1. Gere o secret:
-   ```bash
-   openssl rand -base64 32
+Você viu no PostgreSQL:
+- `URL_PÚBLICA_DO_BANCO_DE_DADOS`: `postgresql://postgres:...@trolley.proxy.rlwy.net:54804/railway`
+
+**Agora faça:**
+
+1. No Railway, clique no serviço **"web"** (não no PostgreSQL)
+2. Vá na aba **"Variáveis"**
+3. Procure por `DATABASE_URL`
+4. **Deve conter:** A URL pública que você viu acima:
    ```
-2. Railway → Serviço "web" → Variables
-3. Adicione: `NEXTAUTH_SECRET` = (valor gerado)
-4. Redeploy
+   postgresql://postgres:XckYAceZBmzqXmJAGDdTSiYevwZkVgT0@trolley.proxy.rlwy.net:54804/railway
+   ```
 
-### Se `NEXTAUTH_URL: ❌ FALTANDO`
-
-1. Railway → Serviço "web" → Variables
-2. Adicione: `NEXTAUTH_URL` = `https://centraldaspizzass.up.railway.app`
-3. Redeploy
-
-### Se `DATABASE_URL: ❌ URL INTERNA (errado!)`
-
-1. Railway → Serviço PostgreSQL → Variables
-2. Copie `DATABASE_PUBLIC_URL`
-3. Railway → Serviço "web" → Variables
-4. Atualize `DATABASE_URL` com a URL pública
-5. Redeploy
+**❌ Se não existir ou estiver diferente:**
+- Clique em **"+ Nova variável"**
+- **Nome:** `DATABASE_URL`
+- **Valor:** Cole a `URL_PÚBLICA_DO_BANCO_DE_DADOS` do PostgreSQL
+- Clique em **"Adicionar"**
 
 ---
 
-## 📋 Checklist Rápido
+### **2️⃣ Verificar NEXTAUTH_URL**
 
-1. [ ] Acessei `/api/setup/create-users`
-2. [ ] Vi a seção `environmentCheck`
-3. [ ] Verifiquei quais variáveis estão faltando
-4. [ ] Adicionei as variáveis faltantes no Railway
-5. [ ] Fiz redeploy
-6. [ ] Tentei login novamente
+No serviço **"web"**, verifique:
+
+1. Procure por `NEXTAUTH_URL`
+2. **Deve ser:** A URL pública do seu sistema
+   - Se estiver no Railway: `https://seu-projeto.up.railway.app`
+   - Se tiver domínio: `https://www.centraldaspizzas.com`
+
+**❌ NUNCA deve ser:**
+- `http://localhost:3000` ❌
+- `https://localhost:3000` ❌
+
+**✅ Se não existir:**
+- Clique em **"+ Nova variável"**
+- **Nome:** `NEXTAUTH_URL`
+- **Valor:** `https://seu-projeto.up.railway.app` (substitua pela URL real)
+- Clique em **"Adicionar"**
 
 ---
 
-**Acesse o endpoint e me mostre o resultado do `environmentCheck`!** 🔍
+### **3️⃣ Verificar NEXTAUTH_SECRET**
 
+No serviço **"web"**, verifique:
+
+1. Procure por `NEXTAUTH_SECRET`
+2. **Deve existir** e ter um valor (geralmente uma string longa)
+
+**❌ Se não existir:**
+
+**Gerar o secret:**
+```bash
+openssl rand -base64 32
+```
+
+**Adicionar no Railway:**
+- Clique em **"+ Nova variável"**
+- **Nome:** `NEXTAUTH_SECRET`
+- **Valor:** Cole o resultado do comando acima
+- Clique em **"Adicionar"**
+
+---
+
+## 🎯 RESUMO DO QUE VERIFICAR NO SERVIÇO WEB
+
+No serviço **"web"** (não no PostgreSQL), você deve ter:
+
+| Variável | Status | Valor Esperado |
+|----------|--------|----------------|
+| `DATABASE_URL` | ✅ | `postgresql://postgres:...@trolley.proxy.rlwy.net:54804/railway` |
+| `NEXTAUTH_URL` | ✅ | `https://seu-projeto.up.railway.app` |
+| `NEXTAUTH_SECRET` | ✅ | String gerada com `openssl rand -base64 32` |
+
+---
+
+## 🚨 PROBLEMA COMUM
+
+**Se você só configurou no PostgreSQL mas não no serviço web:**
+- O serviço web não consegue acessar o banco de dados
+- O NextAuth não consegue autenticar usuários
+- Resultado: "Credenciais incorretas" em outros dispositivos
+
+**Solução:** Configure as variáveis no serviço **"web"** também!
+
+---
+
+## ✅ APÓS VERIFICAR/CORRIGIR
+
+1. **Fazer Redeploy:**
+   - No serviço "web", vá em **"Configurações"**
+   - Clique em **"Redeploy"**
+   - Aguarde 2-3 minutos
+
+2. **Testar:**
+   - Acesse: `https://seu-projeto.up.railway.app/api/health`
+   - Deve mostrar: `✅ Variáveis de ambiente configuradas corretamente`
+
+3. **Testar Login:**
+   - Tente fazer login no celular
+   - Tente fazer login em outro PC
+   - Deve funcionar agora!
+
+---
+
+## 📝 NOTA IMPORTANTE
+
+**Você está vendo as variáveis do PostgreSQL**, mas o problema está no **serviço web**. 
+
+As variáveis precisam estar configuradas em **AMBOS** os serviços:
+- ✅ PostgreSQL: Já está configurado (você está vendo)
+- ⚠️ Serviço Web: Precisa verificar agora!
+
+---
+
+**Siga esses passos e o problema será resolvido!** ✅
